@@ -27,17 +27,23 @@ class Config(object):
 
 
     # Simulation scenario
-    N_EPISODE        = 10                 # Number of Episodes
-    N_TIME_SLOT      = 100                  # Number of Time Slots
+    N_EPISODE        = 801                # Number of Episodes
+    N_TIME_SLOT      = 1000                  # Number of Time Slots
     DURATION         = 0.1                  # Time Slot Duration
     TASK_ARRIVE_PROB = 0.3                  # Task Generation Probability
     N_TIME = N_TIME_SLOT + MAX_DELAY
 
 
     # Algorithm settings
-    LEARNING_RATE    = 0.01
+    LEARNING_RATE    = 0.001
     REWARD_DECAY     = 0.9
     E_GREEDY         = 0.99
     N_NETWORK_UPDATE = 200                  # Networks Parameter Replace
     MEMORY_SIZE      = 500                  # Replay Buffer Memory Size
-
+# ---------------------------------------------------------------------------------------------------------------------- #
+    SEQUENCE_LENGTH  = 16              # Length of the history sequence for the transformer
+    PATCH_LENGTH     = 4               # The number of time steps in each patch
+    D_MODEL          = 32              # The embedding dimension for the transformer
+    N_HEADS          = 4               # The number of attention heads
+    N_ENCODER_LAYERS = 2               # The number of transformer encoder layers
+    
