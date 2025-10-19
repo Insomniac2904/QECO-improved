@@ -39,7 +39,8 @@ class MEC:
         self.max_arrive_size   = Config.TASK_MAX_SIZE
         self.min_arrive_size   = Config.TASK_MIN_SIZE
         self.arrive_task_size_set   = np.arange(self.min_arrive_size, self.max_arrive_size, 0.1)
-        self.ue_energy_state = [Config.UE_ENERGY_STATE[np.random.randint(0,len(Config.UE_ENERGY_STATE))] for ue in range(self.n_ue)]
+        # self.ue_energy_state = [Config.UE_ENERGY_STATE[np.random.randint(0,len(Config.UE_ENERGY_STATE))] for ue in range(self.n_ue)]
+        self.ue_energy_state = [Config.UE_ENERGY_STATE[2] for ue in range(self.n_ue)]
         self.arrive_task_size   = np.zeros([self.n_time, self.n_ue])
         self.arrive_task_dens   = np.zeros([self.n_time, self.n_ue])
         self.n_task = int(self.n_time * self.task_arrive_prob)
@@ -218,7 +219,6 @@ class MEC:
                                                                     / (ue_comp_cap / ue_arrive_task_dens)) - 1,
                                                        self.time_count + self.max_delay - 1])
 
-        # edge QUEUE UPDATE =========================
         for ue_index in range(self.n_ue):
             for edge_index in range(self.n_edge):
                 edge_cap = self.comp_cap_edge[edge_index]/self.n_cycle
@@ -274,7 +274,6 @@ class MEC:
                         self.b_edge_comp[ue_index, edge_index] - processed_bits - self.edge_drop[ue_index, edge_index], 0
                     ])
 
-        # TRANSMISSION QUEUE UPDATE ===================
         for ue_index in range(self.n_ue):
             ue_tran_cap = np.squeeze(self.tran_cap_ue[ue_index,:])
             ue_arrive_task_size = np.squeeze(self.arrive_task_size[self.time_count, ue_index])

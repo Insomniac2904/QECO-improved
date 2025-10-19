@@ -5,38 +5,33 @@ from tensorflow.keras import layers, models, optimizers
 from collections import deque
 from Config import Config
 
-# CORRECTED: Custom Layer using the correct patching function
+# Custom Layer using the correct patching function
 class PatchingLayer(layers.Layer):
     def __init__(self, patch_length, **kwargs):
         super(PatchingLayer, self).__init__(**kwargs)
         self.patch_length = patch_length
 
     def call(self, inputs):
-        # Temporarily expand the input to 4D to use extract_patches
-        # Shape becomes: (batch, 1, sequence_length, features)
         inputs_expanded = tf.expand_dims(inputs, axis=1)
 
         # Create patches using the correct function
         patches = tf.image.extract_patches(
             images=inputs_expanded,
-            sizes=[1, 1, self.patch_length, 1],    # Patch size: 1xpatch_length
-            strides=[1, 1, self.patch_length, 1], # Non-overlapping patches
+            sizes=[1, 1, self.patch_length, 1],    
+            strides=[1, 1, self.patch_length, 1], 
             rates=[1, 1, 1, 1],
             padding='VALID'
         )
         
         # Reshape the output to the desired 3D format
-        # Shape becomes: (batch, num_patches, patch_length * features)
         input_shape = tf.shape(inputs)
         batch_size, _, _, features = patches.shape
         patches = tf.reshape(patches, [batch_size, -1, self.patch_length * input_shape[2]])
         return patches
 
     def compute_output_shape(self, input_shape):
-        # Helper method for Keras to infer the shape
         num_patches = (input_shape[1] - self.patch_length) // self.patch_length + 1
         return (input_shape[0], num_patches, self.patch_length * input_shape[2])
-
 
 class DuelingDoubleDeepQNetwork(tf.keras.Model):
     def __init__(self,

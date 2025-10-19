@@ -5,6 +5,8 @@ from Config import Config
 import numpy as np
 import os
 
+model_dir_prefix = "models/patchTST_performance_mode"
+
 def normalize(parameter, minimum, maximum):
     """Normalizes a parameter to a value between 0 and 1."""
     return (parameter - minimum) / (maximum - minimum)
@@ -23,13 +25,11 @@ def Drop_Count(env):
 
 def Cal_QoE(ue_RL_list, episode):
     """Calculates the average QoE for an episode."""
-    # FIX: Check if the store for the episode exists before accessing it
     rewards = [sum(ue_RL.reward_store[episode]) for ue_RL in ue_RL_list if episode < len(ue_RL.reward_store)]
     return sum(rewards) / len(ue_RL_list) if rewards else 0
 
 def Cal_Delay(ue_RL_list, episode):
     """Calculates the average delay for an episode."""
-    # FIX: Check if the store for the episode exists before accessing it
     all_delays = [
         delay for ue_RL in ue_RL_list if episode < len(ue_RL.delay_store)
         for delay in ue_RL.delay_store[episode] if delay != 0
@@ -38,7 +38,6 @@ def Cal_Delay(ue_RL_list, episode):
 
 def Cal_Energy(ue_RL_list, episode):
     """Calculates the average energy consumption for an episode."""
-    # FIX: Check if the store for the episode exists before accessing it
     energy_ue_list = [sum(ue_RL.energy_store[episode]) for ue_RL in ue_RL_list if episode < len(ue_RL.energy_store)]
     return sum(energy_ue_list) / len(energy_ue_list) if energy_ue_list else 0
 
@@ -49,7 +48,6 @@ def train(env, ue_RL_list, NUM_EPISODE):
         print("\n" + "-*" * 20)
         print(f"Episode: {episode}, Epsilon: {ue_RL_list[0].epsilon:.4f}")
 
-        # Task Arrival Simulation
         bitarrive_size = np.random.uniform(env.min_arrive_size, env.max_arrive_size, size=[env.n_time, env.n_ue])
         bitarrive_size *= (np.random.uniform(0, 1, size=[env.n_time, env.n_ue]) < env.task_arrive_prob)
         bitarrive_size[-env.max_delay:, :] = 0
@@ -59,7 +57,6 @@ def train(env, ue_RL_list, NUM_EPISODE):
         bitarrive_dens[task_indices] = np.random.choice(Config.TASK_COMP_DENS, size=len(task_indices[0]))
         print(f"Num_Task_Arrive: {np.count_nonzero(bitarrive_size)}")
 
-        # History Initialization
         history = [[{
             'observation': np.zeros(env.n_features), 'temporal': np.zeros(env.n_temporal_features),
             'action': np.nan,
@@ -126,7 +123,6 @@ def train(env, ue_RL_list, NUM_EPISODE):
             if done:
                 break
 
-        # Final pass to store metrics for any remaining tasks
         for ue_index in range(env.n_ue):
             update_indices = np.where((1 - reward_indicator[:, ue_index]) * env.process_delay[:, ue_index] > 0)[0]
             for time_idx in update_indices:
@@ -149,7 +145,6 @@ def train(env, ue_RL_list, NUM_EPISODE):
                     )
                     reward_indicator[time_idx, ue_index] = 1
 
-        # --- Log Metrics ---
         avg_delay = Cal_Delay(ue_RL_list, episode)
         avg_energy = Cal_Energy(ue_RL_list, episode)
         avg_QoE = Cal_QoE(ue_RL_list, episode)
@@ -158,15 +153,13 @@ def train(env, ue_RL_list, NUM_EPISODE):
         print(f"Num_Dropped: {num_dropped} [Trans: {env.drop_trans_count}, Edge: {env.drop_edge_count}, UE: {env.drop_ue_count}]")
         print(f"Avg_Delay: {avg_delay:.4f}, Avg_Energy: {avg_energy:.4f}, Avg_QoE: {avg_QoE:.4f}")
 
-        # --- ADD THIS SECTION to save metrics to files ---
         with open("Delay_modified_random.txt", 'a') as f: f.write(f'{avg_delay}\n')
         with open("Energy_modified_random.txt", 'a') as f: f.write(f'{avg_energy}\n')
         with open("QoE_modified_random.txt", 'a') as f: f.write(f'{avg_QoE}\n')
         with open("Drop_modified_random.txt", 'a') as f: f.write(f'{num_dropped}\n')
 
-        # --- ADD THIS SECTION to save the model periodically ---
         if episode > 0 and episode % 800 == 0:
-            model_dir = os.path.join("models", str(episode))
+            model_dir = os.path.join(model_dir_prefix, str(episode))
             os.makedirs(model_dir, exist_ok=True)
             print(f"\n--- Saving models at episode {episode} ---")
             for ue_idx, ue_rl in enumerate(ue_RL_list):
