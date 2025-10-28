@@ -13,11 +13,23 @@ def normalize(parameter, minimum, maximum):
 
 def QoE_Function(delay, max_delay, unfinish_task, ue_energy_state, ue_comp_energy, ue_trans_energy, edge_comp_energy, ue_idle_energy):
     """Calculates the Quality of Experience (QoE) as the reward."""
+    
+    # --- ADD THIS: A large, explicit penalty for dropping a task ---
+    DROP_PENALTY = 100 # Tune this value. It should be large.
+
     energy_cons = ue_comp_energy + ue_trans_energy + next((e for e in edge_comp_energy if e != 0), 0) + next((e for e in ue_idle_energy if e != 0), 0)
     scaled_energy = normalize(energy_cons, 0, 20) * 10
     cost = 2 * ((ue_energy_state * delay) + ((1 - ue_energy_state) * scaled_energy))
+    
     reward = max_delay * 4
-    return reward - cost if not unfinish_task else -cost
+
+    if unfinish_task:
+        # Apply the original cost AND the new massive penalty
+        qoe = -cost - DROP_PENALTY
+    else:
+        qoe = reward - cost
+
+    return qoe
 
 def Drop_Count(env):
     """Counts the number of dropped tasks."""

@@ -102,7 +102,7 @@ class DuelingDoubleDeepQNetwork(tf.keras.Model):
     def _build_net(self):
         def transformer_encoder(inputs, head_size, num_heads, ff_dim):
             x = layers.MultiHeadAttention(key_dim=head_size, num_heads=num_heads, dropout=0.1)(inputs, inputs)
-            x = layers.Dropout(0.1)(x)
+            x = layers.Dropout(0.1)(x) # what if i remove the dropout.
             x = layers.LayerNormalization(epsilon=1e-6)(x + inputs)
             ff_out = layers.Conv1D(filters=ff_dim, kernel_size=1, activation="relu")(x)
             ff_out = layers.Dropout(0.1)(ff_out)
