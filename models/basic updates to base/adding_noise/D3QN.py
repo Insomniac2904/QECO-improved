@@ -410,7 +410,7 @@ class DuelingDoubleDeepQNetwork:
         lstm_s_ = tf.convert_to_tensor(lstm_s_, dtype=tf.float32)
         a_tensor = tf.convert_to_tensor(a, dtype=tf.int32)
         r_tensor = tf.convert_to_tensor(r, dtype=tf.float32)
-        is_weights_tensor = tf.convert_to_tensor(is_weights, dtype=tf.float3s)
+        is_weights_tensor = tf.convert_to_tensor(is_weights, dtype=tf.float32)
 
         # Get Q-values from networks
         # We use training=True for target_net as well, to sample noise.

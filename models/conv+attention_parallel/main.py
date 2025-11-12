@@ -7,7 +7,7 @@ import random
 import os
 import shutil
 
-# --- Reward Shaping Function (Step 2) ---
+# --- Step 2: Reward Shaping Function ---
 def calculate_immediate_penalty(env, ue_index, action, observation, lstm_history):
     """
     Calculates a small, immediate penalty for an action based on the current state.
@@ -78,15 +78,15 @@ def QoE_Function(delay, max_delay, unfinish_task, ue_energy_state, ue_comp_energ
 
 
 def Drop_Count(ue_RL_list, episode):
-    drrop = 0
+    drop = 0
     # We check the actual recorded delays
     for i in range(len(ue_RL_list)):
         if episode < len(ue_RL_list[i].delay_store):
             for j in range(len(ue_RL_list[i].delay_store[episode])):
                 # Check for max delay, which indicates a drop
                 if ue_RL_list[i].delay_store[episode][j] == Config.MAX_DELAY:
-                    drrop = drrop + 1
-    return drrop
+                    drop = drop + 1
+    return drop
 
 
 def Cal_QoE(ue_RL_list, episode):
@@ -144,12 +144,10 @@ def train(ue_RL_list, NUM_EPISODE):
     for episode in range(NUM_EPISODE):
         print("\n-*-**-***-*****-********-*************-********-*****-***-**-*-")
         print(f"Episode  : {episode}")
-        # --- STEP 4: Remove Epsilon print ---
-        # print(f"Epsilon  : {ue_RL_list[0].epsilon:.4f}")
-        # --- END STEP 4 ---
-        # --- FIX: Call lr_schedule object, not the tensor ---
+        # --- Restore Epsilon-Greedy Print ---
+        print(f"Epsilon  : {ue_RL_list[0].epsilon:.4f}")
+        # --- End Restore ---
         print(f"LR       : {ue_RL_list[0].lr_schedule(RL_step).numpy():.7f}")
-        # --- END FIX ---
         print(f"PER Beta : {ue_RL_list[0].beta:.4f}")
 
         # BITRATE ARRIVAL
@@ -391,8 +389,8 @@ def train(ue_RL_list, NUM_EPISODE):
 
 if __name__ == "__main__":
     # Create model directory
-    if not os.path.exists("models"):
-        os.mkdir("models")
+    if not os.path.exists("./saved_weights"):
+        os.mkdir("./saved_weights")
         
     # GENERATE ENVIRONMENT
     env = MEC(Config.N_UE, Config.N_EDGE, Config.N_TIME, Config.N_COMPONENT, Config.MAX_DELAY)
@@ -402,24 +400,25 @@ if __name__ == "__main__":
     for ue in range(Config.N_UE):
         ue_RL_list.append(DuelingDoubleDeepQNetwork(
             env.n_actions, env.n_features, env.n_lstm_state, env.n_time,
-            # --- Updated parameters from Config ---
+            # --- Step 1: LR Schedule ---
             learning_rate_start=Config.LEARNING_RATE_START,
             learning_rate_end=Config.LEARNING_RATE_END,
             learning_rate_decay_steps=Config.LEARNING_RATE_DECAY_STEPS,
             batch_size=Config.BATCH_SIZE,
+            # --- End Step 1 ---
+            reward_decay=Config.REWARD_DECAY,
+            # --- Restored Epsilon-Greedy ---
+            e_greedy=Config.E_GREEDY,
+            e_greedy_increment=Config.E_GREEDY_INCREMENT,
+            # --- End Restore ---
+            replace_target_iter=Config.N_NETWORK_UPDATE,
+            memory_size=Config.MEMORY_SIZE,
             # --- Step 3: PER Parameters ---
             per_alpha=Config.PER_ALPHA,
             per_beta_start=Config.PER_BETA_START,
             per_beta_anneal_steps=Config.PER_BETA_ANNEAL_STEPS,
             per_epsilon=Config.PER_EPSILON,
             # --- End Step 3 ---
-            reward_decay=Config.REWARD_DECAY,
-            # --- STEP 4: Remove Epsilon parameters ---
-            # e_greedy=Config.E_GREEDY, (REMOVED)
-            # e_greedy_increment=Config.E_GREEDY_INCREMENT, (REMOVED)
-            # --- END STEP 4 ---
-            replace_target_iter=Config.N_NETWORK_UPDATE,
-            memory_size=Config.MEMORY_SIZE,
             n_lstm_step=10, # Default n_lstm_step
             dueling=True,
             double_q=True,
@@ -427,9 +426,24 @@ if __name__ == "__main__":
             N_lstm=20 # Default N_lstm
         ))
 
-    # # Clean old log files
-    # with open("Delay.txt", 'w') as f: f.write("Avg_Delay")
-    # with open("Energy.txt", 'w') as f: f.write("Avg_Energy")
-    # with open("QoE.txt", 'w')
+    # Clean old log files
+    with open("Delay.txt", 'w') as f: f.write("Avg_Delay")
+    with open("Energy.txt", 'w') as f: f.write("Avg_Energy")
+    with open("QoE.txt", 'w') as f: f.write("Avg_QoE")
+    with open("Drop.txt", 'w') as f: f.write("Num_Drop")
 
-    train(ue_RL_list, Config.N_EPISODE)
+    # TRAIN THE SYSTEM
+    try:
+        train(ue_RL_list, Config.N_EPISODE)
+    except KeyboardInterrupt:
+        print("\nTraining interrupted. Saving final models...")
+        model_dir = os.path.join("models", "final_interrupt")
+        os.makedirs(model_dir, exist_ok=True)
+        for ue in range(env.n_ue):
+            model_prefix = os.path.join(model_dir, f"{ue}_X_model")
+            ue_RL_list[ue].save_model(model_prefix)
+        print("Final models saved.")
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+        import traceback
+        traceback.print_exc()
