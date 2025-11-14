@@ -39,8 +39,8 @@ class MEC:
         self.max_arrive_size   = Config.TASK_MAX_SIZE
         self.min_arrive_size   = Config.TASK_MIN_SIZE
         self.arrive_task_size_set   = np.arange(self.min_arrive_size, self.max_arrive_size, 0.1)
-        # self.ue_energy_state = [Config.UE_ENERGY_STATE[np.random.randint(0,len(Config.UE_ENERGY_STATE))] for ue in range(self.n_ue)]
-        self.ue_energy_state = [Config.UE_ENERGY_STATE[2] for ue in range(self.n_ue)]
+        self.ue_energy_state = [Config.UE_ENERGY_STATE[np.random.randint(0,len(Config.UE_ENERGY_STATE))] for ue in range(self.n_ue)]
+        # self.ue_energy_state = [Config.UE_ENERGY_STATE[2] for ue in range(self.n_ue)]
         self.arrive_task_size   = np.zeros([self.n_time, self.n_ue])
         self.arrive_task_dens   = np.zeros([self.n_time, self.n_ue])
         self.n_task = int(self.n_time * self.task_arrive_prob)
